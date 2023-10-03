@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat con Socket.IO</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .chat-container {
+            display: inline-block;
+            vertical-align: top;
+            margin: 20px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .chat-header {
+            background-color: #075E54; 
+            border-radius: 5px 5px 0 0; 
+            padding: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .chat-header img {
+            margin-right: 10px; 
+        }
+        
+        .chat-header h1 {
+            color: white; 
+        }
+        
+        .mensaje-chat {
+            border-radius: 5px;
+            padding: 8px;
+            margin-top: 5px;
+            max-width: 70%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .mensaje-chat1 {
+            background-color: #054640;
+            justify-content: flex-end;
+            align-self: flex-end;
+        }
+        
+        .mensaje-chat2 {
+            background-color: #1F2A30;
+            justify-content: flex-start;
+            align-self: flex-start;
+        }
+        .mensaje-chat4{
+            background-color: #054640; 
+        }
+
+        .mensaje-chat3 {
+            background-color: #1F2A30; 
+        }
+
+        .mensaje-container1 {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .mensaje-container2 {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .mensaje-container {
+            display: flex;
+            flex-direction: column;
+            max-width: 500px;
+            margin: 20px auto;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        
+        .chat-wrapper {
+            display: flex;
+            justify-content: center;
+        }
+        
+        .nombre-imagen-form {
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .imagen-perfil {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .mensaje-form {
+            display: flex;
+            align-items: center;
+        }
+        
+        .mensaje-input {
+            flex-grow: 1;
+            border: none;
+            border-radius: 5px;
+            padding: 8px;
+            margin-right: 5px;
+        }
+        
+        .mensaje-button {
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .nombre-chat {
+            display: inline-block;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <form class="nombre-imagen-form" id="nombre-imagen-form1">
+        <input type="text" id="nombre1" placeholder="Nombre Chat 1" />
+        <input type="file" id="imagen1" accept="image/*" />
+        <button type="button" onclick="cargarNombre(1)">Cargar Nombre e Imagen</button>
+    </form>
+
+    <form class="nombre-imagen-form" id="nombre-imagen-form2">
+        <input type="text" id="nombre2" placeholder="Nombre Chat 2" />
+        <input type="file" id="imagen2" accept="image/*" />
+        <button type="button" onclick="cargarNombre(2)">Cargar Nombre e Imagen</button>
+    </form>
+
+    <div class="chat-wrapper">
+        <div class="chat-container" id="chat-container1">
+            <div class="chat-header">
+                <img class="imagen-perfil" id="imagen-perfil1" src="placeholder.png" alt="Imagen de perfil" />
+                <h1 id="nombre-chat1"></h1>
+            </div>
+            <br> <br>    
+            <div class="mensaje-container1" id="mensaje-container1"> 
+                <div id="lista-mensajes1"></div>
+            </div>
+            <form class="mensaje-form" onsubmit="return enviarMensaje(1)">
+                <input class="mensaje-input" id="mensaje1" autocomplete="off" placeholder="Escribe un mensaje" />
+                <button class="mensaje-button">Enviar</button>
+            </form>
+        </div>
+
+        <div class="chat-container" id="chat-container2">
+            <div class="chat-header">
+                <img class="imagen-perfil" id="imagen-perfil2" src="placeholder.png" alt="Imagen de perfil" />
+                <h1 id="nombre-chat2"></h1>
+            </div>
+            <br> <br> 
+            <div class="mensaje-container2" id="mensaje-container2"> 
+                <div id="lista-mensajes2"></div>
+            </div>
+            <form class="mensaje-form" onsubmit="return enviarMensaje(2)">
+                <input class="mensaje-input" id="mensaje2" autocomplete="off" placeholder="Escribe un mensaje" />
+                <button class="mensaje-button">Enviar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        var nombre1 = '';
+        var imagenURL1 = 'placeholder.png'; 
+        var nombre2 = '';
+        var imagenURL2 = 'placeholder.png'; 
+        var socket = io();
+
+        function enviarMensaje(chat) {
+            var mensajeInput = document.getElementById(`mensaje${chat}`);
+            var mensaje = mensajeInput.value;
+            var hora = obtenerHoraActual();
+            if (chat === 1) {
+                socket.emit('chat message 1', { nombre: nombre1, mensaje, hora, imagenURL: imagenURL1 });
+            } else if (chat === 2) {
+                socket.emit('chat message 2', { nombre: nombre2, mensaje, hora, imagenURL: imagenURL2 });
+            }
+            mensajeInput.value = '';
+            return false;
+        }
+
+        function cargarNombre(chat) {
+            var inputNombre = document.getElementById(`nombre${chat}`);
+            var nombre = inputNombre.value;
+            var inputImagen = document.getElementById(`imagen${chat}`);
+            var imagen = inputImagen.files[0];
+
+            if (imagen) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    if (chat === 1) {
+                        imagenURL1 = e.target.result;
+                        document.getElementById('imagen-perfil1').src = imagenURL1;
+                        nombre1 = nombre; 
+                        document.getElementById('nombre-chat1').textContent = nombre1;
+                    } else if (chat === 2) {
+                        imagenURL2 = e.target.result;
+                        document.getElementById('imagen-perfil2').src = imagenURL2;
+                        nombre2 = nombre;
+                        document.getElementById('nombre-chat2').textContent = nombre2;
+                    }
+                };
+                reader.readAsDataURL(imagen);
+            }
+        }
+        
+        socket.on('chat message 1', function(data) {
+            mostrarMensaje(data.nombre, data.mensaje, data.hora, 'lista-mensajes1', 'mensaje-chat1');
+            mostrarMensaje(data.nombre, data.mensaje, data.hora, 'lista-mensajes2', 'mensaje-chat2');
+        });
+
+        socket.on('chat message 2', function(data) {
+            mostrarMensaje(data.nombre, data.mensaje, data.hora, 'lista-mensajes1', 'mensaje-chat3');
+            mostrarMensaje(data.nombre, data.mensaje, data.hora, 'lista-mensajes2', 'mensaje-chat4');
+        });
+        
+        function obtenerHoraActual() {
+            var fecha = new Date();
+            var hora = fecha.getHours().toString().padStart(2, '0');
+            var minutos = fecha.getMinutes().toString().padStart(2, '0');
+            var segundos = fecha.getSeconds().toString().padStart(2, '0');
+            return hora + ':' + minutos + ':' + segundos;
+        }
+
+        function mostrarMensaje(nombre, mensaje, hora, containerId, mensajeClass) {
+            var container = document.getElementById(containerId);
+            var mensajeElement = document.createElement('div');
+            var contenidoElement = document.createElement('div');
+            var horaElement = document.createElement('div');
+
+            contenidoElement.textContent = mensaje;
+            horaElement.textContent = hora;
+            mensajeElement.classList.add('mensaje-chat', mensajeClass);
+            mensajeElement.appendChild(contenidoElement);
+            mensajeElement.appendChild(horaElement);
+
+            container.appendChild(mensajeElement);
+        }
+    </script>
+</body>
+</html>
